@@ -95,7 +95,7 @@ module.exports = function(etcd, config){
 		etcd.get("", { recursive: true }, function(err, item) {
 			if(item !== null) {
 				var rootDir = etcdToJson(item);
-				if (rootDir === null) {
+				if (rootDir !== null) {
 					apps = rootDir.root;
 					p_cbk(apps);
 				} else {
