@@ -1,242 +1,137 @@
 var utils = require('../utils'),
-enums = require('../enums');
+enums = require('../enums')
+// Etcd = require('../node-etcd/etcd'),
+// etcd = new Etcd('127.0.0.1', '4001', 'v2');
 
-var defaultApp = {
-	appId: null,
-	localStrategyEvents : {
-		//'42374897239' : localStrategyEnum.INDIFFERENT
-	},
-	cloudStrategyEvents : {
-		//'42374897239': cloudStrategyEnum.INDIFFERENT
-	},
-	servers : [
-		//{
-		//	server: 'http://server3/app',
-		//	cloud : 'nubeA',
-		//  cost : 0,
-		//	status: {
-		//		cpuLoad: 50, //Cpu load of the server 0-100
-		//		memLoad: 50, //Memory load of the server 0-100
-		//		timeStamp: 42374897239, //UTC time stamp of this info
-		//		stateEvents: {
-		//			'42374897239' : state: stateEnum.READY, //Future state of the serve
-		//		}
-		//	}
-		//}
-	]
-};
-
-module.exports = function(colApp, config){
+module.exports = function(etcd, config){
 	var self = {};
 
-	colApp.ensureIndex({appId:1});
+	function extractLastKeyFromPath(path) {
+		var n = path.lastIndexOf("/");
+		var key = path.substr(n+1)
+		return key;
+	}
 
-	self.create = function(p_app, p_cbk){
-		var app = utils.merge({},defaultApp);
-
-		app = utils.merge(app, p_app);
-
-		//Si no tenemos id no creamos la app
-		if(app.appId === null){
-			p_cbk(null);
-			return;
+	function jsonToEtcd(json, whole) {
+		// if (whole == null) whole = false;
+		function processJson(json, parentKey) {
+			if(parentKey == null) parentKey = "";
+			for (var key in json) {
+				var record = {};
+				record.key = parentKey + "/" + key;
+				record.val = undefined;
+				if (typeof json[key] == 'object') {
+					if (whole) output.push(record);
+					processJson(json[key], record.key);
+				} else {
+					record.val = json[key];
+					output.push(record);
+				}
+			}
 		}
 
-		colApp.insert(app, {w:1}, function(err, items){
+		var output = [];
+
+		if (json != null && typeof json == 'object') {
+			processJson(json);
+			return output;
+		} else {
+			return null
+		}
+	}
+
+	function etcdToJson(level) {
+		function processEtcd(level, output) {
+			if (Object.prototype.toString.call(level) == '[object Array]') {
+				for (var i = 0; i < level.length; i++) {
+					processEtcd(level[i], output);
+				}
+			} else if (level != null && typeof level == 'object') {
+				var key = extractLastKeyFromPath(level.key);
+				if (key === "") key = "root";
+				if ('dir' in level) {
+					output[key] = {};
+					processEtcd(level.kvs, output[key]);
+				} else {
+					output[key] = level['value'];
+				}
+			}
+		}
+
+		var output = {};
+
+		if (level != null && typeof level == 'object') {
+			processEtcd(level, output);
+			return output;
+		} else {
+			return null;
+		}
+	}
+	
+	function insert(appJson, callback) {
+		var etcdTree = jsonToEtcd(appJson);
+		if (etcdTree === null) {
+			callback(null);
+		} else {
+			console.log("***Length: " + etcdTree.length);
+			console.log(etcdTree);
+			var error = null;
+			for (var i = 0; i < etcdTree.length; i++) {
+				etcd.set(etcdTree[i]['key'], etcdTree[i]['val'], function(err, val) {
+					if (err != null && error === null) error = err;
+				});
+			}
+			callback(error);
+		}
+	}
+
+	self.create = function(p_app, p_cbk){
+		insert(p_app, function(err, items){
 			if(p_cbk) p_cbk(err);
 		});
 	};
 
 	self.getAll = function(p_cbk){
-		colApp.find({}).toArray(function(err, items){
-			for(var i in items){
-				var modified = clean(items[i]);
-				if(modified) self.update(items[i]);
+		etcd.get("", { recursive: true }, function(err, item) {
+			if(item !== null) {
+				var rootDir = etcdToJson(item);
+				if (rootDir === null) {
+					apps = rootDir.root;
+					p_cbk(apps);
+				} else {
+					p_cbk(null);
+				}
+			} else {
+				p_cbk(null);
 			}
-			p_cbk(items);
 		});
 	};
 
 	self.getFromId = function(p_appId, p_cbk){
-		var find = {
-			appId: p_appId
-		};
-
-		colApp.findOne(find, {}, function(err, item){
+		etcd.get("/" + p_appId, { recursive: true }, function(err, item) {
 			if(item !== null) {
-				var modified = clean(item);
-				if(modified){
-					self.update(item);
+				var app = etcdToJson(item);
+				if (app !== null) {
+					console.log(JSON.stringify(app));
+					console.log(app);
+					p_cbk(app);
+				} else {
+					p_cbk(null);
 				}
+			} else {
+				p_cbk(null);
 			}
-			p_cbk(item);
 		});
 	};
-
-	function clean(p_app){
-		if(p_app === null) return false;
-		var now = new Date().getTime();
-
-		var modified = false;
-
-		//clean localStrategy
-		var previousLocal;
-		for(var local in p_app.localStrategyEvents){
-			if(local < now){
-				if(previousLocal > 0){
-					delete p_app.localStrategyEvents[previousLocal];
-					modified = true;
-				}
-				previousLocal = local;
-			}
-		}
-
-		//clean cloudStrategy
-		var previousCloud;
-		for(var cloud in p_app.cloudStrategyEvents){
-			if(cloud < now){
-				if(previousCloud > 0){
-					delete p_app.cloudStrategyEvents[previousCloud];
-					modified = true;
-				}
-				previousCloud = cloud;
-			}
-		}
-
-		//clean servers
-		var server, previousState;
-		var s, S = p_app.servers.length;
-		for(s=S-1;s>=0;s--){
-			server = p_app.servers[s];
-			if(server.status === undefined) continue;
-
-			previousState = -1;
-			for(var serverState in server.status.stateEvents){
-				if(serverState < now){
-					if(serverState < (now - config.app.timeout) && server.status.stateEvents[serverState] != enums.app.stateEnum.UNAVAILABLE){
-						server.status.stateEvents[now] = enums.app.stateEnum.UNAVAILABLE;
-						modified = true;
-					}
-					if(server.status.stateEvents[serverState] == enums.app.stateEnum.DELETE){
-						p_app.servers.splice(s,1);
-						modified = true;
-						break;
-					}
-					if(previousState > 0){
-						delete server.status.stateEvents[previousState];
-						modified = true;
-					}
-					previousState = serverState;
-				} else {
-					//do nothing with future changes
-					break;
-				}
-
-			}
-		}
-
-		return modified;
-	}
 
 	self.update = function(p_app, p_cbk){
-		var find = {
-			appId: p_app.appId
-		};
-
-		colApp.findOne(find, {}, function(err, oldApp){
-			p_app = utils.merge(utils.merge({},defaultApp), p_app);
-			if(err){
-				console.log(err);
-				if(p_cbk) p_cbk();
-			}
-			else if(oldApp === null){
-				self.create(p_app, p_cbk);
-			} else {
-
-				//merging & sort localStrategies schedule
-				// merge
-				for(var localStrategyEventsIdx in p_app.localStrategyEvents){
-					oldApp.localStrategyEvents[localStrategyEventsIdx] = p_app.localStrategyEvents[localStrategyEventsIdx];
-				}
-				//sort
-				oldApp.localStrategyEvents = utils.sortObj(oldApp.localStrategyEvents);
-
-				//merging & sort cloudStrategies schedule
-				//merge
-				for(var cloudStrategyEventsIdx in p_app.cloudStrategyEvents){
-					oldApp.cloudStrategyEvents[cloudStrategyEventsIdx] = p_app.cloudStrategyEvents[cloudStrategyEventsIdx];
-				}
-				//sort
-				oldApp.cloudStrategyEvents = utils.sortObj(oldApp.cloudStrategyEvents);
-
-				//merging servers
-				var newServer, serverFound, oldServer;
-				var ns, NS = p_app.servers.length;
-				var os, OS = oldApp.servers.length;
-				for(ns=0;ns<NS;ns++){
-					newServer = p_app.servers[ns];
-
-					if(newServer.status === undefined){
-						newServer.status = {
-							stateEvents: {}
-						};
-					}
-
-					serverFound = false;
-					for(os=0;os<OS;os++){
-						oldServer = oldApp.servers[os];
-						if(newServer.server == oldServer.server){
-
-							if(oldServer.status === undefined){
-								oldServer.status = {
-									stateEvents: {}
-								};
-							}
-
-							for(var stateEventsIdx in newServer.status.stateEvents){
-								oldServer.status.stateEvents[stateEventsIdx] = parseInt(newServer.status.stateEvents[stateEventsIdx]);
-							}
-							oldServer.status.stateEvents = utils.sortObj(oldServer.status.stateEvents);
-
-							// Copies info
-							for(var info in newServer){
-								if(info == 'status') continue;
-								oldServer[info] = newServer[info];
-							}
-
-							// Checks timestamp for cpu/mem updates
-							if(newServer.status.timeStamp > oldServer.status.timeStamp || oldServer.status.timeStamp === undefined){
-								for(var serverStatusFieldIdx in newServer.status){
-									if(serverStatusFieldIdx == 'stateEvents') continue;
-									oldServer.status[serverStatusFieldIdx] = newServer.status[serverStatusFieldIdx];
-								}
-							}
-
-							serverFound = true;
-							break;
-						}
-					}
-					if(!serverFound) {
-						oldApp.servers.push(newServer);
-					}
-
-				}
-
-				clean(oldApp);
-
-				colApp.update(find, oldApp, function(err){
-					if(p_cbk) p_cbk(err);
-				});
-			}
+		this.create(p_app,  function(err){
+			if(p_cbk) p_cbk(err);
 		});
 	};
 
-	self.remove = function(p_id, p_cbk){
-		var find = {
-			appId: p_id
-		};
-
-		colApp.remove(find, function(err, item){
+	self.remove = function(p_appId, p_cbk){
+		etcd.del("/"+p_appId, function(err, item){
 			if(err) {
 				p_cbk(err);
 			}

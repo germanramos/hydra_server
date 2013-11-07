@@ -1,7 +1,7 @@
 var commons = require('../../lib/commons'),
-	mongodb = commons.mongodb,
+	// mongodb = commons.mongodb,
 	async	= commons.async,
-	ObjectID = commons.mongodb.ObjectID,
+	// ObjectID = commons.mongodb.ObjectID,
 	hero	= commons.hero,
 	app		= hero.app,
 	express	= commons.express,
@@ -37,7 +37,8 @@ module.exports = hero.worker (
 							}
 						);
 					}
-				], function(err){
+				], 
+				function(err){
 
 					if ( err === null ) {
 						// Start to sync hydra

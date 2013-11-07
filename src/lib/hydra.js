@@ -1,5 +1,5 @@
 var commons = require('./commons'),
-	mongodb = commons.mongodb,
+	// mongodb = commons.mongodb,
 	utils = require('./utils'),
 	enums = require('./enums');
 
@@ -13,8 +13,8 @@ var config = {};
 hydra.init = function(p_dbClient, p_config, p_cbk){
 	config = utils.merge(config, p_config);
 
-	colApp = new mongodb.Collection(p_dbClient, 'app');
-	hydra.app = require('./dao/app')(colApp, config);
+	// colApp = new mongodb.Collection(p_dbClient, 'app');
+	hydra.app = require('./dao/app')(p_dbClient, config);
 
 	p_cbk();
 };

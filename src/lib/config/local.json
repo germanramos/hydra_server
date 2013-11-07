@@ -1,12 +1,11 @@
 {
-	"publicUrl": "http://< public_dns >:< client_api_port >",
-	"serverPort": "< server_api_port >",
+	"publicUrl": "http://127.0.0.1:80",
+	"serverPort": "443",
 	"db" : {
 		"host" : "localhost",
-		"port" : "27017",
-		"name" : "hydra",
-		"type" : "mongodb",
-		"params" : ""
+		"port" : "4001",
+		"apiVersion" : "v2",
+		"type" : "etcd"
 	},
 	"qlog" : {
 		"url" : "http://api.qlog.io:3000",

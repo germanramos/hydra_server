@@ -2,9 +2,8 @@
 	"name"		: "hydra",
 	"version"	: "0.0.1",
 	"dependencies"	: {
-		"mongodb" 	: "1.2.x",
 		"express" 	: "3.x",
-		"hero"	 : "https://github.com/thegameofcode/hero/tarball/master"
+		"hero"	 : "https://github.com/IGZalbertogregoris/hero/tarball/master"
 	},
 	"engines" : {
 		"node"	: "0.8.x",

@@ -3,10 +3,9 @@
 	"serverPort": "< server_api_port >",
 	"db" : {
 		"host" : "localhost",
-		"port" : "27017",
-		"name" : "hydra",
-		"type" : "mongodb",
-		"params" : ""
+		"port" : "4001",
+		"apiVersion" : "v2",
+		"type" : "etcd"
 	},
 	"qlog" : {
 		"url" : "http://api.qlog.io:3000",

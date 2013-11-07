@@ -3,11 +3,17 @@ var server_api = require('../server_api'),
 
 module.exports = function(req, res){
 	try{
-		var app = {
-			appId : req.params.appId,
+		// var app = {
+		// 	appId : req.params.appId,
+		// 	localStrategyEvents : req.body.localStrategyEvents || {},
+		// 	cloudStrategyEvents : req.body.cloudStrategyEvents || {},
+		// 	servers : req.body.servers || []
+		// };
+		var app = {};
+		app[req.params.appId] = {
 			localStrategyEvents : req.body.localStrategyEvents || {},
 			cloudStrategyEvents : req.body.cloudStrategyEvents || {},
-			servers : req.body.servers || []
+			servers : req.body.servers || {}
 		};
 
 		hydra.app.update(app, function(err){
