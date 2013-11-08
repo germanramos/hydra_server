@@ -20,11 +20,15 @@ module.exports = function(etcd, config){
 				var record = {};
 				record.key = parentKey + "/" + key;
 				record.val = undefined;
-				if (typeof json[key] == 'object') {
+				if (typeof json[key] == 'object' && Object.getOwnPropertyNames(json[key]).length) {
 					if (whole) output.push(record);
 					processJson(json[key], record.key);
 				} else {
-					record.val = json[key];
+					if (typeof json[key] == 'object' && !Object.getOwnPropertyNames(json[key]).length) {
+						record.val = 0;
+					} else {
+						record.val = json[key];
+					}
 					output.push(record);
 				}
 			}
