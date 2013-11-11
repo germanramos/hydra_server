@@ -1,7 +1,5 @@
 var utils = require('../utils'),
 enums = require('../enums')
-// Etcd = require('../node-etcd/etcd'),
-// etcd = new Etcd('127.0.0.1', '4001', 'v2');
 
 module.exports = function(etcd, config){
 	var self = {};
@@ -13,7 +11,6 @@ module.exports = function(etcd, config){
 	}
 
 	function jsonToEtcd(json, whole) {
-		// if (whole == null) whole = false;
 		function processJson(json, parentKey) {
 			if(parentKey == null) parentKey = "";
 			for (var key in json) {
@@ -24,11 +21,7 @@ module.exports = function(etcd, config){
 					if (whole) output.push(record);
 					processJson(json[key], record.key);
 				} else {
-					if (typeof json[key] == 'object' && !Object.getOwnPropertyNames(json[key]).length) {
-						record.val = 0;
-					} else {
-						record.val = json[key];
-					}
+					record.val = json[key].toString();
 					output.push(record);
 				}
 			}

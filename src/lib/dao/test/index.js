@@ -18,7 +18,7 @@ var newApp = {
 				cloud : 'nubeA',
 			 	cost : 1,
 				status: {
-					cpuLoad: 10,
+					cpuLoad: 0,
 					memLoad: 10,
 					timeStamp: 12374897239,
 					stateEvents: {
@@ -34,7 +34,7 @@ var newApp = {
 			 	cost : 2,
 				status: {
 					cpuLoad: 20,
-					memLoad: 20,
+					memLoad: 0,
 					timeStamp: 22374897239,
 					stateEvents: {
 						'32374897239': 3,
