@@ -145,7 +145,8 @@ module.exports = function(etcd, config){
 				return;
 			}
 
-			self.balanceServers(app, p_cbk);
+			app[p_appId].appId = p_appId;
+			self.balanceServers(app[p_appId], p_cbk);
 		});
 	};
 
