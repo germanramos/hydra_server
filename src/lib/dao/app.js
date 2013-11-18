@@ -4,6 +4,8 @@ enums = require('../enums')
 module.exports = function(etcd, config){
 	var self = {};
 
+	var tempKeyTTL = 10;
+
 	function extractLastKeyFromPath(path) {
 		var n = path.lastIndexOf("/");
 		var key = path.substr(n+1)
@@ -74,9 +76,18 @@ module.exports = function(etcd, config){
 			console.log(etcdTree);
 			var error = null;
 			for (var i = 0; i < etcdTree.length; i++) {
-				etcd.set(etcdTree[i]['key'], etcdTree[i]['val'], function(err, val) {
-					if (err != null && error === null) error = err;
-				});
+				if (etcdTree[i]['key'].indexOf("localStrategyEvents") !== -1 ||
+					etcdTree[i]['key'].indexOf("cloudStrategyEvents") !== -1 ||
+					etcdTree[i]['key'].indexOf("stateEvents") !== -1) 
+				{
+					etcd.setTTL(etcdTree[i]['key'], etcdTree[i]['val'], tempKeyTTL, function(err, val) {
+						if (err != null && error === null) error = err;
+					});
+				} else{
+					etcd.set(etcdTree[i]['key'], etcdTree[i]['val'], function(err, val) {
+						if (err != null && error === null) error = err;
+					});
+				};
 			}
 			callback(error);
 		}
@@ -127,16 +138,16 @@ module.exports = function(etcd, config){
 		});
 	};
 
-	self.remove = function(p_appId, p_cbk){
-		etcd.del("/"+p_appId, function(err, item){
-			if(err) {
-				p_cbk(err);
-			}
-			else {
-				p_cbk(null);
-			}
-		});
-	};
+	// self.remove = function(p_appId, p_cbk){
+	// 	etcd.del("/"+p_appId, function(err, item){
+	// 		if(err) {
+	// 			p_cbk(err);
+	// 		}
+	// 		else {
+	// 			p_cbk(null);
+	// 		}
+	// 	});
+	// };
 
 	self.availableServers = function (p_appId, p_cbk){
 		self.getFromId(p_appId, function(app){

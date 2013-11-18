@@ -47,10 +47,10 @@ var newApp = {
 	}
 };
 
-console.log("******* CREATE TEST *********");
-dao.create(newApp, function(doc, err) {
-	console.log("Entra");
-});
+// console.log("******* CREATE TEST *********");
+// dao.create(newApp, function(doc, err) {
+// 	console.log("Entra");
+// });
 
 // console.log("******* GET FROM ID TEST *********");
 // dao.getFromId('hydra_3', function() {
@@ -61,3 +61,8 @@ dao.create(newApp, function(doc, err) {
 // dao.getAll(function() {
 // 	console.log("*** End ***");
 // });
+
+// console.log("******* AVAILABLE SERVERS *********");
+dao.availableServers(newApp, function(err, servers) {
+	console.log(servers);
+});

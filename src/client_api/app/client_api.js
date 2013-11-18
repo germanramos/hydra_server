@@ -1,7 +1,5 @@
 var commons = require('../../lib/commons'),
-	// mongodb = commons.mongodb,
 	async	= commons.async,
-	// ObjectID = commons.mongodb.ObjectID,
 	hero	= commons.hero,
 	app		= hero.app,
 	express	= commons.express,
@@ -11,8 +9,6 @@ var commons = require('../../lib/commons'),
 module.exports = hero.worker (
 	function(self){
 		var dbHydra = self.db('config', self.config.db);
-
-		var colServers;
 
 		// Configuration
 		app.configure(function() {
@@ -26,18 +22,9 @@ module.exports = hero.worker (
 		});
 
 		self.ready = function(p_cbk){
-			async.parallel (
-				[
-					// etcd
-					function(done){
-						dbHydra.setup(
-							function(err, client){
-								hydra.init(client, self.config, done);
-							}
-						);
-					}
-				], function(err){
-					p_cbk(err);
+			dbHydra.setup(
+				function(err, client){
+					hydra.init(client, self.config, p_cbk);
 				}
 			);
 		};
