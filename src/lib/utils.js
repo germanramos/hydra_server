@@ -1,5 +1,4 @@
-var crypto = require('crypto'), //http://nodejs.org/api/crypto.html
-	http = require('http'); //http://nodejs.org/api/http.html
+var crypto = require('crypto'); //http://nodejs.org/api/crypto.html
 
 // Pauses streams
 exports.pause = require('pause');
@@ -87,6 +86,14 @@ function request(method, url, data, cbk){
 			'Content-Type': 'application/json',
 			'Content-Length': sData.length
 		};
+	}
+
+	if (protocol == "http") {
+		http = require('http'); //http://nodejs.org/api/http.html
+	} else if (protocol == "https") {
+		http = require('https'); //http://nodejs.org/api/https.html
+	} else {
+		console.log("ERROR: Unknown Protocol " + protocol);
 	}
 
 	var req = http.request(opt, function(res){
