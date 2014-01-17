@@ -50,7 +50,7 @@ module.exports = function(etcd, config){
 				if (key === "") key = "root";
 				if ('dir' in level) {
 					output[key] = {};
-					processEtcd(level.kvs, output[key]);
+					processEtcd(level.nodes, output[key]);
 				} else {
 					output[key] = level['value'];
 				}
@@ -102,7 +102,7 @@ module.exports = function(etcd, config){
 	self.getAll = function(p_cbk){
 		etcd.get("", { recursive: true }, function(err, item) {
 			if(item !== null) {
-				var rootDir = etcdToJson(item);
+				var rootDir = etcdToJson(item.node);
 				if (rootDir !== null) {
 					apps = rootDir.root;
 					p_cbk(apps);
@@ -118,7 +118,7 @@ module.exports = function(etcd, config){
 	self.getFromId = function(p_appId, p_cbk){
 		etcd.get("/" + p_appId, { recursive: true }, function(err, item) {
 			if(item !== null) {
-				var app = etcdToJson(item);
+				var app = etcdToJson(item.node);
 				if (app !== null) {
 					console.log(JSON.stringify(app));
 					console.log(app);
